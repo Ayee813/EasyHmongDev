@@ -1,0 +1,215 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:NL;src:url(fonts/nl-lao.woff2);font-weight:700;unicode-range:U+0E80-0EFF}
+@font-face{font-family:NL;src:url(fonts/nl-latin.woff2);font-weight:700;unicode-range:U+0000-00FF,U+2000-206F}
+@font-face{font-family:NS;src:url(fonts/ns-lao.woff2);font-weight:700}
+@font-face{font-family:PH;src:url(fonts/ph.woff2);font-weight:400}
+html,body{margin:0;background:#fbf7ee}
+svg{display:block}
+</style></head><body>
+<svg id="svg" xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+<defs>
+<filter id="crayon" filterUnits="userSpaceOnUse" x="0" y="0" width="1080" height="1920" color-interpolation-filters="sRGB">
+ <feTurbulence id="n1" type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed="1" result="n"/>
+ <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="G" result="d"/>
+ <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="5" result="g"/>
+ <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3.2 2.7" result="holes"/>
+ <feComposite in="d" in2="holes" operator="in"/>
+</filter>
+<filter id="lite" filterUnits="userSpaceOnUse" x="0" y="0" width="1080" height="1920" color-interpolation-filters="sRGB">
+ <feTurbulence id="n2" type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="1" result="n"/>
+ <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+ <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="9" result="g"/>
+ <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.6 2.55" result="holes"/>
+ <feComposite in="d" in2="holes" operator="in"/>
+</filter>
+<linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7ec8ee" stop-opacity=".75"/><stop offset=".6" stop-color="#a9dcf3" stop-opacity=".35"/><stop offset="1" stop-color="#d4ecf7" stop-opacity="0"/></linearGradient>
+<radialGradient id="glow"><stop offset="0" stop-color="#ffe56a" stop-opacity=".95"/><stop offset=".5" stop-color="#ffd23f" stop-opacity=".45"/><stop offset="1" stop-color="#ffd23f" stop-opacity="0"/></radialGradient>
+<radialGradient id="blob"><stop offset="0" stop-color="#6fc0ee" stop-opacity=".55"/><stop offset="1" stop-color="#6fc0ee" stop-opacity="0"/></radialGradient>
+</defs>
+<image href="paper.png" x="0" y="0" width="1080" height="1920"/>
+<g id="B"></g>
+<g id="M" filter="url(#crayon)"></g>
+<g id="H"></g>
+<g id="T" filter="url(#lite)"></g>
+<g id="U"></g>
+</svg>
+<script>
+const C={ink:'#2b2622',red:'#e8452c',org:'#ff8a2a',peach:'#f7b98e',yel:'#ffd23f',grn:'#58b43a',teal:'#27b0a3',blu:'#3a9ad9',sky:'#8fd0f0',pur:'#7a3fb5',lav:'#c9a8e8',pink:'#f06aa5',brn:'#a8683a',gold:'#f0a500',paper:'#fffdf5'};
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const P=(t,a,b)=>clamp((t-a)/(b-a));
+const EO=x=>1-Math.pow(1-x,3);
+const EI=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+const BO=x=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2)};
+const pop=(t,a,d=.35)=>{const p=P(t,a,a+d);return p<=0?0:BO(p)};
+const win=(t,a,b,f=.3)=>Math.min(P(t,a,a+f),1-P(t,b-f,b)); // 0..1 visibility window
+const mul=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+let uid=0,S,T,U,Bk;
+const R=(x,y,w,h)=>`M${x},${y} h${w} v${h} h${-w} Z`;
+function ln(d,col=C.ink,w=7,p=1,o=''){
+ if(p<=0.001)return'';
+ const base=`d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+ return p>=1?`<path ${base} ${o}/>`:`<path ${base} pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${1-p}" ${o}/>`;
+}
+function zig(clipD,bx,by,bw,bh,col,p=1,o={}){
+ if(p<=0.001)return'';
+ const sw=o.sw||18,st=o.st||sw*0.8,r=mul(o.seed||((bx*31+by*17+bw*7+bh)|0)),ang=o.ang??-7;
+ const m=Math.max(bw,bh)*0.2+10,x0=bx-m,x1=bx+bw+m,y0=by-m,y1=by+bh+m;
+ let d='',i=0;
+ for(let y=y0;y<y1;y+=st,i++){const a=x0+r()*8,b=x1-r()*8,j=(r()-.5)*10;const s=i%2?b:a,e=i%2?a:b;d+=(i?` L${s},${y}`:`M${s},${y}`)+` L${e},${y+j}`}
+ const cx=bx+bw/2,cy=by+bh/2,id='cp'+(uid++);
+ const dash=p>=1?'':`pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${1-p}"`;
+ return `<clipPath id="${id}"><path d="${clipD}"/></clipPath><g clip-path="url(#${id})"><path d="${d}" transform="rotate(${ang} ${cx} ${cy})" ${dash} fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" opacity="${o.op??.96}"/></g>`;
+}
+function G(inner,x=0,y=0,s=1,rot=0,op=1){
+ if(!inner||s<=0.01||op<=0.01)return'';
+ return `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" opacity="${op}">${inner}</g>`;
+}
+function txt(s,x,y,size,col,font='NL',anchor='middle',extra=''){
+ const e=String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ return `<text x="${x}" y="${y}" font-family="${font==='PH'?'PH,NL':'NL,PH'}" font-weight="${font==='PH'?400:700}" font-size="${size}" fill="${col}" text-anchor="${anchor}" ${extra}>${e}</text>`;
+}
+// place shape+text with same transform
+function place(shape,text,x,y,s=1,rot=0,op=1){ if(shape)S.push(G(shape,x,y,s,rot,op)); if(text)T.push(G(text,x,y,s,rot,op)); }
+function arrow(x1,y1,x2,y2,col,p=1,w=7){
+ if(p<=0.001)return'';
+ const a=Math.atan2(y2-y1,x2-x1),h=26;
+ let s=ln(`M${x1},${y1} L${x2},${y2}`,col,w,p);
+ if(p>=1)s+=ln(`M${x2-h*Math.cos(a-.5)},${y2-h*Math.sin(a-.5)} L${x2},${y2} L${x2-h*Math.cos(a+.5)},${y2-h*Math.sin(a+.5)}`,col,w);
+ return s;
+}
+const STAR=(k=1)=>`M0,${-30*k} L${9*k},${-9*k} L${30*k},${-9*k} L${13*k},${5*k} L${19*k},${26*k} L0,${13*k} L${-19*k},${26*k} L${-13*k},${5*k} L${-30*k},${-9*k} L${-9*k},${-9*k} Z`;
+const HEART='M0,34 C-70,-14 -44,-64 0,-26 C44,-64 70,-14 0,34 Z';
+function star(col,k=1,sw=14){return zig(STAR(k),-32*k,-32*k,64*k,64*k,col,1,{sw:sw*k,seed:3})+ln(STAR(k),C.ink,5)}
+function burst(t,t0,x,y,n,seed,cols=[C.red,C.yel,C.pur,C.org,C.blu,C.pink,C.grn],R0=330){
+ const p=P(t,t0,t0+1.4); if(p<=0||p>=1)return'';
+ const r=mul(seed);let s='';
+ for(let i=0;i<n;i++){const a=r()*6.283,v=.4+r()*.6,k=.35+r()*.4,col=cols[i%cols.length];
+  const px=x+Math.cos(a)*R0*v*EO(p),py=y+Math.sin(a)*R0*v*EO(p)+220*p*p*v;
+  s+=G(`<path d="${STAR(1)}" fill="${col}" stroke="${C.ink}" stroke-width="4"/>`,px,py,k,p*500*(r()-.5),1-P(p,.6,1))}
+ return s;
+}
+function pointer(){return `<path d="M0,0 L0,72 L19,55 L32,86 L47,79 L34,49 L59,47 Z" fill="#fff" stroke="${C.ink}" stroke-width="6" stroke-linejoin="round"/>`}
+function ripple(t,t0,x,y,col=C.blu){const p=P(t,t0,t0+.55);if(p<=0||p>=1)return'';return `<circle cx="${x}" cy="${y}" r="${12+70*EO(p)}" fill="none" stroke="${col}" stroke-width="${9*(1-p)+2}" opacity="${1-p}"/>`}
+
+const HC={red:'#e0302b'};
+/* ---------- Hmong spiral motif (hand-drawn, original) ---------- */
+function spiral(r,turns=2.6,flip=1){let d='';const n=64;for(let i=0;i<=n;i++){const a=i/n*turns*6.2832,rr=r*i/n;d+=(i?' L':'M')+(flip*rr*Math.cos(a)).toFixed(1)+','+(rr*Math.sin(a)).toFixed(1)}return d}
+// ring of n spirals around (0,0) radius R; alternating red/blue/yellow. p=draw-on progress 0..1
+function spiralRing(n,R,p=1,cols=[C.red,C.blu,C.yel]){
+ const r=R*Math.sin(Math.PI/n)*.92;let s='';
+ for(let i=0;i<n;i++){const a=i/n*6.2832-1.5708;const x=R*Math.cos(a),y=R*Math.sin(a);
+  s+=`<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(a*57.3).toFixed(0)})">`+ln(spiral(r,2.4,i%2?-1:1),cols[i%cols.length],r*.2,P(p,i/n*.6,i/n*.6+.4))+'</g>'}
+ return s;
+}
+// embroidery band (red cloth strip) local coords, top-left at 0,0
+function band(w,h=90){
+ let s=zig(R(0,0,w,h),0,0,w,h,HC.red,1,{sw:14})+ln(`M0,0 L${w},0 M0,${h} L${w},${h}`,C.ink,6);
+ const cols=[C.yel,C.grn,C.blu,C.pink];
+ for(let x=h/2,i=0;x<w;x+=h*.9,i++){const k=h*.26,y=h/2,c=cols[i%4];
+  s+=`<path d="M${x},${y-k} L${x+k},${y} L${x},${y+k} L${x-k},${y} Z" fill="${c}" stroke="${C.ink}" stroke-width="4" stroke-linejoin="round"/>`}
+ return s;
+}
+/* ---------- sprite hero: the ONE mascot, cut from the character sheet ---------- */
+const SPR={};   // name -> {w,h}; filled from sprites/meta.json before rendering
+// hero(name,t,{x,y,h,flip,bob,amp,sway,rot,op,pop,ph}) -> string for layer H (no filter: sprites already have crayon texture)
+// (x,y) = feet / bottom-centre. h = height in px. pop = t0 -> springy pop-in at time t0.
+function hero(name,t,o={}){
+ const m=SPR[name];if(!m)return'';
+ const h=o.h||620,s=h/m.h,w=m.w*s,ph=o.ph||0;
+ const b=o.bob?Math.abs(Math.sin(t*o.bob*Math.PI+ph)):0;               // bounce 0..1
+ const idle=Math.sin(t*2.2+ph);                                          // breathing
+ let sc=o.pop!=null?pop(t,o.pop,.4):1;
+ const sy=sc*(1+.018*idle+(o.bob?-.03*b:0)),sx=sc*(1-.012*idle)*(o.flip?-1:1);
+ const rot=(o.rot||0)+(o.sway?Math.sin(t*2.6+ph)*o.sway:0);
+ const y=o.y-(o.bob?b*(o.amp||26):0);
+ const op=o.op??1;if(sc<=.01||op<=.01)return'';
+ return `<g transform="translate(${o.x} ${y}) rotate(${rot}) scale(${sx} ${sy})" opacity="${op}"><image href="sprites/${name}.png" x="${-w/2}" y="${-h}" width="${w}" height="${h}"/></g>`;
+}
+// circular face badge (reaction inset): hero face sprite clipped to a ring, e.g. faceBadge('face_surprised',t,{x,y,r:150,pop:t0})
+function faceBadge(name,t,o={}){
+ const m=SPR[name];if(!m)return'';
+ const r=o.r||150,k=o.pop!=null?pop(t,o.pop,.35):1;if(k<=.01)return'';
+ const id='fb'+(uid++),s=(2.1*r)/Math.min(m.w,m.h*1.15),w=m.w*s,h=m.h*s;
+ return `<g transform="translate(${o.x} ${o.y}) scale(${k})"><clipPath id="${id}"><circle r="${r}"/></clipPath><circle r="${r}" fill="${C.paper}"/><g clip-path="url(#${id})"><image href="sprites/${name}.png" x="${-w/2}" y="${-h*.52}" width="${w}" height="${h}"/></g><circle r="${r}" fill="none" stroke="${C.ink}" stroke-width="9"/></g>`;
+}
+async function loadSprites(){await Promise.all(Object.keys(SPR).map(n=>{const i=new Image();i.src=`sprites/${n}.png`;return i.decode()}))}
+
+</script><script src="sprites/meta.js"></script><script src="env.js"></script><script>
+/* ---------- speaking keyframes: lip-sync from the audio envelope ---------- */
+// ENV = normalised speech loudness 0..1, 30 samples/s, smoothed (see env.py); a plain array in env.js: const ENV=[...]
+const MOUTH={rest:'mouth_rest',neutral:'mouth_neutral',A:'mouth_open_A',M:'mouth_close_M',E:'mouth_wide_E',O:'mouth_round_O',FV:'mouth_narrow_FV',I:'mouth_smile_I',L:'mouth_tongue_L_TH',CH:'mouth_ch_J',SH:'mouth_sh',WQ:'mouth_w_Q'};
+const envAt=t=>{if(typeof ENV==='undefined')return 0;const i=t*30,a=Math.floor(i),f=i-a;return (ENV[a]??0)*(1-f)+(ENV[a+1]??0)*f};
+const hs=k=>{let x=Math.imul(k+1,2654435761)>>>0;x^=x>>>15;x=Math.imul(x,2246822519)>>>0;return (x>>>8)/16777216};
+// which mouth key at time t. ~9 changes/s while speaking; level decides how open; M closes just before a pause.
+function mouthKey(t){
+ const e=envAt(t);
+ if(e<.07)return (envAt(t-.35)<.07&&envAt(t+.35)<.07)?'rest':'neutral';        // silence: rest (long) / neutral (short gap)
+ if(envAt(t+.12)<.07)return 'M';                                                  // lips close before a pause
+ const k=Math.floor(t*9),pick=(a,j)=>a[Math.floor(hs(j)*a.length)];
+ const lvl=envAt((k+.5)/9);
+ const pool=lvl>.55?['A','O','E','A','WQ']:lvl>.28?['E','I','L','CH','SH','A','FV']:['I','M','neutral','FV'];
+ let m=pick(pool,k);if(m===pick(pool,k-1))m=pool[(pool.indexOf(m)+1)%pool.length];  // never repeat the same mouth twice in a row
+ return m;
+}
+// talking head (bust). o as hero(): {x,y,h,bob,sway,pop,op,flip}. emphasis nudges scale with loudness for a little bounce.
+function talkHead(t,o={}){const e=envAt(t);return hero(MOUTH[mouthKey(t)],t,{...o,h:(o.h||620)*(1+.025*e),y:o.y-6*e})}
+// full-body speaking pose + loudness bounce (the pose keeps its own open mouth; use talkHead for exact lip-sync)
+function talkPose(name,t,o={}){const e=envAt(t);return hero(name,t,{...o,h:(o.h||560)*(1+.02*e),y:o.y-8*e})}
+// crayon speech bubble: returns {shape(for layer M), text(for layer T)}; tail='l'|'r' side the tail points to; lines = array of strings
+function bubble(lines,x,y,o={}){ // (x,y)=bubble centre
+ const fs=o.fs||52,w=Math.max(...lines.map(s=>s.length))*fs*.56+70,h=lines.length*fs*1.18+50,l=o.tail==='r'?1:-1;
+ const rr=`M${-w/2+30},${-h/2} H${w/2-30} Q${w/2},${-h/2} ${w/2},${-h/2+30} V${h/2-30} Q${w/2},${h/2} ${w/2-30},${h/2} H${l*(w*.18)+30} L${l*(w*.34)},${h/2+46} L${l*(w*.18)-20},${h/2} H${-w/2+30} Q${-w/2},${h/2} ${-w/2},${h/2-30} V${-h/2+30} Q${-w/2},${-h/2} ${-w/2+30},${-h/2} Z`;
+ const k=o.pop!=null?pop(o.t,o.pop,.35):1;
+ const shape=G(`<path d="${rr}" fill="${C.paper}" stroke="${C.ink}" stroke-width="7" stroke-linejoin="round"/>`,x,y,k);
+ const text=G(lines.map((s,i)=>txt(s,0,(i-(lines.length-1)/2)*fs*1.18+fs*.34,fs,C.ink,'PH')).join(''),x,y,k);
+ return {shape,text};
+}
+
+const SUBS=[[0.15,1.2,'Hello everyone!'],[1.3,3.1,'Welcome to|Easy Hmong Dev.'],[3.35,5.3,'Today, we will learn|coding together.'],[5.55,7.7,"Let's make programming|easy and fun."],[7.95,8.64,'Thank you!']];
+function wrapT(s,max=21){if(s.includes('|'))return s.split('|');const w=s.split(' ');const L=[];let c='';for(const x of w){if((c+' '+x).trim().length>max){L.push(c);c=x}else c=(c+' '+x).trim()}L.push(c);return L}
+const SPEAK_END=8.64;
+function render(t){
+ uid=0;S=[];T=[];U=[];const Hh=[];
+ document.getElementById('n1').setAttribute('seed',(Math.floor(t*7.5)%4)+1);document.getElementById('n2').setAttribute('seed',(Math.floor(t*7.5)%4)+4);
+ document.getElementById('B').innerHTML='<rect x="0" y="0" width="1080" height="1500" fill="url(#skyg)"/>';
+ // title
+ const tp=pop(t,0.05,.5);
+ T.push(G(txt('Easy',262,215,124,'#e8590c','PH')+txt('Hmong Dev',662,215,124,C.ink,'PH'),0,0,1,0,tp));
+ S.push(G(ln('M190,252 Q540,282 900,248',C.org,10,P(t,.3,.9)),0,0,1,0,1));
+ // scene windows
+ const A=[0,1.28],Bq=[1.28,7.9],E=[7.9,99];
+ if(t<A[1]){ // greeting
+  S.push(G(spiralRing(12,400,P(t,.1,1.0)),540,930,1));
+  Hh.push(talkPose('say_greeting',t,{x:540,y:1290,h:700,pop:.05,sway:1.2}));
+ }else if(t<E[0]){ // talking head, continuous
+  const sc=t<3.3?0:t<5.5?1:2;
+  if(sc===0){S.push(G(spiralRing(12,380,1),540,900,1,0,1-P(t,1.28,1.6)));}
+  if(sc===1){ // coding scene: crayon </> sign
+   const k=pop(t,3.4,.45);
+   S.push(G(zig(R(-120,-90,240,180),-120,-90,240,180,C.sky,1,{sw:14})+`<path d="${R(-120,-90,240,180)}" fill="none" stroke="${C.ink}" stroke-width="8" stroke-linejoin="round"/>`+ln('M-52,-40 L-82,0 L-52,40',C.blu,16)+ln('M-12,50 L12,-50',C.org,16)+ln('M52,-40 L82,0 L52,40',C.blu,16),910,470,.85*k,-5*k+Math.sin(t*3)*2));
+   T.push(G(txt('coding',910,600,60,C.ink,'PH'),0,0,1,0,k));
+  }
+  if(sc===2){
+   const k1=pop(t,5.9,.4),k2=pop(t,6.75,.4);
+   T.push(G(txt('easy',210,640,86,C.grn,'PH'),0,0,1,0,k1));T.push(G(txt('fun!',890,640,96,C.pink,'PH'),0,0,1,0,k2));
+   S.push(burst(t,6.75,540,520,16,5));
+  }
+  Hh.push(talkHead(t,{x:540,y:1330,h:800,pop:A[1],sway:.8}));
+  T.push(G(band(1080,100),0,1320,1));
+ }else{ // thanks
+  S.push(G(spiralRing(14,420,P(t,7.9,8.4)),540,930,1));
+  Hh.push(talkPose('say_thanks',t,{x:540,y:1290,h:780,pop:E[0],sway:1}));
+  const b=bubble(['Thank you!'],540,350,{tail:'l',t,pop:8.0});S.push(b.shape);T.push(b.text);
+ }
+ // subtitles
+ const cur=SUBS.find(s=>t>=s[0]&&t<s[1]);
+ if(cur){const L=wrapT(cur[2]),k=Math.min(1,P(t,cur[0],cur[0]+.18)),h=L.length*74+54;
+  S.push(`<g opacity="${k*(1-P(t,cur[1]-.08,cur[1]))}"><rect x="110" y="${1585-h/2}" width="860" height="${h}" rx="34" fill="${C.paper}" stroke="${C.ink}" stroke-width="7"/></g>`);
+  U.push(`<g opacity="${k*(1-P(t,cur[1]-.08,cur[1]))}">`+L.map((s,i)=>txt(s,540,1585-h/2+27+58+i*74-6,58,C.ink)).join('')+'</g>');}
+ document.getElementById('M').innerHTML=S.join('');document.getElementById('H').innerHTML=Hh.join('');
+ document.getElementById('T').innerHTML=T.join('');document.getElementById('U').innerHTML=U.join('');
+}
+window.ready=(async()=>{await loadSprites();await document.fonts.load('700 50px NL','Hello');await document.fonts.load('400 50px PH','Easy');render(0.5)})();
+</script></body></html>
